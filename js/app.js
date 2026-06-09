@@ -50,7 +50,7 @@
   {
     id: "remit",
     title: "跨境汇款",
-    icon: "🌏",
+    icon: "💴",
     gradient: "linear-gradient(135deg, #0fc6a6, #14b8a6)",
     glow: "rgba(15, 198, 166, 0.18)",
     summary: "围绕跨境支付通与电汇，按银行拆分汇款前准备、费用时效和到账跟进。",
@@ -418,14 +418,19 @@ function renderTocFromArticle() {
 
   const setActiveToc = () => {
     const headerHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-height")) || 64;
-    const threshold = headerHeight + 18;
+    const threshold = headerHeight + 56;
     let activeHeading = headings[0];
 
-    for (const heading of headings) {
-      if (heading.getBoundingClientRect().top <= threshold) {
-        activeHeading = heading;
-      } else {
-        break;
+    const isAtPageBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+    if (isAtPageBottom) {
+      activeHeading = headings[headings.length - 1];
+    } else {
+      for (const heading of headings) {
+        if (heading.getBoundingClientRect().top <= threshold) {
+          activeHeading = heading;
+        } else {
+          break;
+        }
       }
     }
 

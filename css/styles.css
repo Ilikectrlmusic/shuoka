@@ -148,8 +148,8 @@ a {
 
 .search {
   position: relative;
-  width: 230px;
-  flex: 0 0 230px;
+  width: 180px;
+  flex: 0 0 180px;
 }
 
 .search input {
@@ -539,7 +539,28 @@ main {
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.78);
   box-shadow: var(--shadow-soft);
+  animation: card-up-in 0.42s ease backwards;
   transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.home-card:nth-child(2) {
+  animation-delay: 0.04s;
+}
+
+.home-card:nth-child(3) {
+  animation-delay: 0.08s;
+}
+
+@keyframes card-up-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .home-card::before {
@@ -1246,16 +1267,20 @@ main {
     border-radius: 18px;
     box-shadow: var(--shadow-soft);
     background: rgba(255, 255, 255, 0.98);
+    opacity: 0;
   }
 
-  .nav__dropdown:hover .dropdown-panel {
+  .nav__dropdown:not(.is-open) .dropdown-panel,
+  .nav__dropdown:hover:not(.is-open) .dropdown-panel {
     display: none;
     visibility: hidden;
+    opacity: 0;
   }
 
   .nav__dropdown.is-open .dropdown-panel {
     display: block;
     visibility: visible;
+    opacity: 1;
   }
 
   .dropdown-list--desktop {
@@ -1265,6 +1290,20 @@ main {
   .dropdown-list--mobile {
     display: grid;
     gap: 4px;
+  }
+
+  .dropdown-list--mobile a {
+    color: var(--text);
+    background: rgba(248, 251, 255, 0.82);
+  }
+
+  .dropdown-list--mobile a span {
+    color: var(--text);
+    font-weight: 850;
+  }
+
+  .dropdown-list--mobile a small {
+    color: var(--muted);
   }
 
   .search {
