@@ -1,0 +1,53 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="小白说卡：大陆人的美股导航，汇总港卡、券商、跨境汇款教程。">
+  <title>小白说卡｜大陆人的美股导航</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="site-header" id="top">
+    <nav class="nav" aria-label="主导航">
+      <a class="brand" href="#home" aria-label="回到主页">
+        <span class="brand__logo">卡</span>
+        <span>
+          <span class="brand__name">小白说卡</span>
+          <span class="brand__tagline">大陆人的美股导航</span>
+        </span>
+      </a>
+      <button class="nav__toggle" type="button" aria-label="打开搜索" aria-expanded="false">⌕</button>
+      <div class="nav__menu" id="nav-menu">
+        <div class="nav__links" id="nav-links">
+          <div class="nav__dropdown" data-section="hk-card">
+            <a href="#hk-card" class="nav__item" data-nav="hk-card">港卡</a>
+            <div class="dropdown-panel" aria-label="港卡目录"></div>
+          </div>
+          <div class="nav__dropdown" data-section="broker">
+            <a href="#broker" class="nav__item" data-nav="broker">券商</a>
+            <div class="dropdown-panel" aria-label="券商目录"></div>
+          </div>
+          <div class="nav__dropdown" data-section="remit">
+            <a href="#remit" class="nav__item" data-nav="remit">跨境汇款</a>
+            <div class="dropdown-panel" aria-label="跨境汇款目录"></div>
+          </div>
+        </div>
+        <div class="search" role="search">
+          <label class="sr-only" for="site-search">搜索文章</label>
+          <input id="site-search" type="search" autocomplete="off" placeholder="搜索文章">
+          <div class="search-results" id="search-results" aria-label="搜索结果"></div>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main id="app" tabindex="-1"></main>
+
+  <footer class="site-footer">
+    <p>© <span id="year"></span> 小白说卡</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
