@@ -1251,13 +1251,13 @@ main {
   .dropdown-panel {
     position: fixed;
     top: calc(var(--header-height) + 8px);
-    left: 12px;
-    right: 12px;
-    width: auto;
+    left: 50vw;
+    right: auto;
+    width: min(360px, calc(100vw - 24px));
     display: none;
     opacity: 1;
     visibility: hidden;
-    transform: none;
+    transform: translateX(-50%);
     max-height: calc(100dvh - var(--header-height) - 22px);
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -1268,6 +1268,7 @@ main {
     box-shadow: var(--shadow-soft);
     background: rgba(255, 255, 255, 0.98);
     opacity: 0;
+    transition: opacity 0.16s ease, visibility 0.16s ease;
   }
 
   .nav__dropdown:not(.is-open) .dropdown-panel,
@@ -1279,8 +1280,17 @@ main {
 
   .nav__dropdown.is-open .dropdown-panel {
     display: block;
+    left: 50vw;
+    right: auto;
     visibility: visible;
     opacity: 1;
+    transform: translateX(-50%);
+  }
+
+  .nav__dropdown.is-open:hover .dropdown-panel {
+    left: 50vw;
+    right: auto;
+    transform: translateX(-50%);
   }
 
   .dropdown-list--desktop {
