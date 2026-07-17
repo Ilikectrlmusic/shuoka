@@ -8,7 +8,7 @@
     summary: "从赴港前准备、银行选择到开卡后的日常维护，按流程梳理港卡教程。",
     groups: [
       {
-        title: "前期准备&赴港流程",
+        title: "前期准备&开卡流程",
         articles: [
           { slug: "materials", title: "资料准备", desc: "准备港澳通行证、内地身份证、过关 PDF 和支持 NFC 的手机。" },
           { slug: "travel-prep", title: "出行准备", desc: "出发前完成流量包、手机漫游、微信乘车码和港币现金准备。" },
