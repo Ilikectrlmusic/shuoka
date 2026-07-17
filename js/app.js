@@ -91,6 +91,7 @@ const navToggle = document.querySelector(".nav__toggle");
 const searchInput = document.querySelector("#site-search");
 const searchResults = document.querySelector("#search-results");
 const mobileNavQuery = window.matchMedia("(max-width: 860px)");
+const siteBaseUrl = new URL(".", document.baseURI);
 
 let currentRoute = null;
 let cleanupActiveToc = null;
@@ -375,7 +376,10 @@ async function loadArticleContent(route) {
       throw new Error(`HTTP ${response.status}`);
     }
     const html = await response.text();
-    container.outerHTML = html;
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    normalizeLocalImageSources(template.content);
+    container.replaceWith(template.content);
     renderTocFromArticle();
   } catch (error) {
     container.outerHTML = `
@@ -499,6 +503,18 @@ function saveSidebarScroll() {
   if (sidebarScroller) {
     sidebarScrollTopBySection.set(currentRoute.section.id, sidebarScroller.scrollTop);
   }
+}
+
+function normalizeLocalImageSources(root) {
+  root.querySelectorAll("img[src]").forEach((image) => {
+    const source = image.getAttribute("src")?.trim();
+    if (!source || source.startsWith("data:") || source.startsWith("blob:")) return;
+
+    const resolved = new URL(source, siteBaseUrl);
+    if (resolved.origin === window.location.origin) {
+      image.setAttribute("src", resolved.href);
+    }
+  });
 }
 
 function setupSidebarScrollbar() {
@@ -713,6 +729,7 @@ function bindGlobalEvents() {
 }
 
 document.querySelector("#year").textContent = String(new Date().getFullYear());
+normalizeLocalImageSources(document);
 renderDropdowns();
 bindGlobalEvents();
 render();
