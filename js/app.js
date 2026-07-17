@@ -10,24 +10,25 @@
       {
         title: "前期准备&赴港流程",
         articles: [
-          { slug: "materials", title: "资料准备", desc: "整理赴港开户前常见资料、备份方式与临行前核对清单。" },
-          { slug: "travel-prep", title: "出行准备", desc: "把交通、通信、住宿和预约事项合并成一份出行前检查表。" },
-          { slug: "hk-process", title: "赴港流程", desc: "按抵港、办理、补充资料和返程后的跟进顺序梳理完整流程。" }
+          { slug: "materials", title: "资料准备", desc: "准备港澳通行证、内地身份证、过关 PDF 和支持 NFC 的手机。" },
+          { slug: "travel-prep", title: "出行准备", desc: "出发前完成流量包、手机漫游、微信乘车码和港币现金准备。" },
+          { slug: "hk-process", title: "开卡流程", desc: "从抵港过关、连接免费 WiFi 到选择合适开卡地点，梳理赴港开卡现场流程。" }
         ]
       },
       {
         title: "推荐银行",
         articles: [
-          { slug: "hsbc", title: "汇丰", desc: "记录汇丰开户前需要确认的账户类型、材料和后续使用要点。" },
-          { slug: "za-bank", title: "众安", desc: "梳理众安银行开户路径、身份验证和日常使用注意事项。" },
-          { slug: "hang-seng", title: "恒生", desc: "汇总恒生银行开户前后的确认项，便于和其他银行横向比较。" },
-          { slug: "cncbi", title: "中信国际", desc: "整理中信国际账户办理、跨境使用和维护时建议关注的事项。" }
+          { slug: "recommended-banks", title: "推荐银行", desc: "对比汇丰、众安、恒生和中信国际的定位与主要特点。" },
+          { slug: "hsbc", title: "汇丰", desc: "汇丰账户要求、App 下载、开户审核及注册使用教程。" },
+          { slug: "za-bank", title: "众安", desc: "众安银行 App 下载二维码与线上开户教程。" },
+          { slug: "hang-seng", title: "恒生", desc: "恒生银行 App 下载二维码与线上开户教程。" },
+          { slug: "cncbi", title: "中信国际", desc: "中信银行（国际）App 下载二维码与线上开户教程。" }
         ]
       },
       {
-        title: "开卡后的注意事项",
+        title: "注意事项",
         articles: [
-          { slug: "after-card", title: "注意事项", desc: "开卡后围绕安全、账户活跃、限额和资料更新建立长期维护清单。" }
+          { slug: "after-card", title: "开好后必做", desc: "汇丰开卡后的实体卡说明与后续操作教程。" }
         ]
       }
     ]
@@ -93,6 +94,7 @@ const mobileNavQuery = window.matchMedia("(max-width: 860px)");
 
 let currentRoute = null;
 let cleanupActiveToc = null;
+let cleanupSidebarScrollbar = null;
 const sidebarScrollTopBySection = new Map();
 
 function escapeHtml(value) {
@@ -209,6 +211,7 @@ function renderDropdowns() {
 }
 
 function renderHome() {
+  document.body.classList.remove("is-article-page");
   document.title = "小白说卡｜大陆人的美股导航";
 
   const cards = sections.map((section) => {
@@ -304,27 +307,24 @@ function renderArticleSkeleton(route) {
       ? [{ label: "上一篇", article: prevArticle }]
       : [];
 
-  document.title = `${article.title}｜${section.title}｜小白说卡`;
+  document.body.classList.add("is-article-page");
+  document.title = `${article.title}｜${section.title}`;
 
   app.innerHTML = `
     <div class="article-shell">
       <aside class="sidebar" aria-label="${escapeHtml(section.title)}目录">
-        <div class="sidebar__inner">
-          ${renderMenu(section, article.slug)}
+        <div class="sidebar__scroller">
+          <div class="sidebar__inner">
+            ${renderMenu(section, article.slug)}
+          </div>
         </div>
+        <div class="sidebar__scrollbar" aria-hidden="true"><span class="sidebar__scrollbar-thumb"></span></div>
       </aside>
 
       <article class="article-card">
         ${renderMobileJump(section, article.slug)}
         <header class="article-hero">
-          <nav class="breadcrumb" aria-label="面包屑">
-            <a href="#home">主页</a>
-            <span>/</span>
-            <a href="${firstHref(section)}">${escapeHtml(section.title)}</a>
-            ${section.flat ? "" : `<span>/</span><span>${escapeHtml(article.parentTitle)}</span>`}
-          </nav>
           <h1>${escapeHtml(article.title)}</h1>
-          <p class="article-hero__desc">${escapeHtml(article.desc)}</p>
         </header>
 
         <div class="article-body">
@@ -349,10 +349,11 @@ function renderArticleSkeleton(route) {
   `;
 
   const savedTop = sidebarScrollTopBySection.get(section.id);
-  const sidebar = document.querySelector(".sidebar");
-  if (sidebar && typeof savedTop === "number") {
-    sidebar.scrollTop = savedTop;
+  const sidebarScroller = document.querySelector(".sidebar__scroller");
+  if (sidebarScroller && typeof savedTop === "number") {
+    sidebarScroller.scrollTop = savedTop;
   }
+  setupSidebarScrollbar();
 
   const mobileJump = document.querySelector("#mobile-jump");
   if (mobileJump) {
@@ -470,6 +471,7 @@ async function renderArticle(route) {
 }
 
 function renderMissing() {
+  document.body.classList.remove("is-article-page");
   document.title = "页面未找到｜小白说卡";
   app.innerHTML = `
     <section class="empty-state">
@@ -493,16 +495,73 @@ function updateActiveNav(route) {
 
 function saveSidebarScroll() {
   if (currentRoute?.page !== "article") return;
-  const sidebar = document.querySelector(".sidebar");
-  if (sidebar) {
-    sidebarScrollTopBySection.set(currentRoute.section.id, sidebar.scrollTop);
+  const sidebarScroller = document.querySelector(".sidebar__scroller");
+  if (sidebarScroller) {
+    sidebarScrollTopBySection.set(currentRoute.section.id, sidebarScroller.scrollTop);
   }
+}
+
+function setupSidebarScrollbar() {
+  cleanupSidebarScrollbar?.();
+  cleanupSidebarScrollbar = null;
+  const scroller = document.querySelector(".sidebar__scroller");
+  const track = document.querySelector(".sidebar__scrollbar");
+  const thumb = document.querySelector(".sidebar__scrollbar-thumb");
+  if (!scroller || !track || !thumb) return;
+
+  const update = () => {
+    const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+    const trackHeight = track.clientHeight;
+    if (maxScroll <= 1 || trackHeight <= 0) {
+      track.hidden = true;
+      return;
+    }
+
+    track.hidden = false;
+    const thumbHeight = Math.max(36, trackHeight * (scroller.clientHeight / scroller.scrollHeight));
+    const maxThumbTop = Math.max(0, trackHeight - thumbHeight);
+    const thumbTop = maxScroll > 0 ? (scroller.scrollTop / maxScroll) * maxThumbTop : 0;
+    thumb.style.height = `${thumbHeight}px`;
+    thumb.style.transform = `translateY(${thumbTop}px)`;
+  };
+
+  scroller.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update, { passive: true });
+
+  let dragStartY = 0;
+  let dragStartScrollTop = 0;
+  thumb.addEventListener("pointerdown", (event) => {
+    dragStartY = event.clientY;
+    dragStartScrollTop = scroller.scrollTop;
+    thumb.setPointerCapture(event.pointerId);
+    thumb.classList.add("is-dragging");
+  });
+  thumb.addEventListener("pointermove", (event) => {
+    if (!thumb.hasPointerCapture(event.pointerId)) return;
+    const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+    const availableTrack = track.clientHeight - thumb.offsetHeight;
+    if (maxScroll <= 0 || availableTrack <= 0) return;
+    scroller.scrollTop = dragStartScrollTop + ((event.clientY - dragStartY) / availableTrack) * maxScroll;
+  });
+  const stopDragging = (event) => {
+    if (thumb.hasPointerCapture(event.pointerId)) thumb.releasePointerCapture(event.pointerId);
+    thumb.classList.remove("is-dragging");
+  };
+  thumb.addEventListener("pointerup", stopDragging);
+  thumb.addEventListener("pointercancel", stopDragging);
+  requestAnimationFrame(update);
+
+  cleanupSidebarScrollbar = () => {
+    window.removeEventListener("resize", update);
+  };
 }
 
 async function render() {
   saveSidebarScroll();
   cleanupActiveToc?.();
   cleanupActiveToc = null;
+  cleanupSidebarScrollbar?.();
+  cleanupSidebarScrollbar = null;
   const route = parseRoute();
   currentRoute = route;
 
