@@ -1064,6 +1064,10 @@ main {
   width: min(24%, 150px);
 }
 
+.article-body .article-figure--hsbc-status {
+  width: min(28%, 220px);
+}
+
 .article-body .text-danger {
   color: #dc2626;
   font-weight: 800;
@@ -1073,7 +1077,12 @@ main {
   width: min(65%, 440px);
   grid-template-columns: 0.58fr 1fr;
   gap: 24px;
+  align-items: start;
   margin-inline: auto;
+}
+
+.article-body .article-image-row--route figure {
+  align-self: start;
 }
 
 .article-body .article-image-row--route img {
@@ -1126,6 +1135,10 @@ main {
 
   .article-body .article-figure--app-qr {
     width: min(45%, 150px);
+  }
+
+  .article-body .article-figure--hsbc-status {
+    width: min(58%, 220px);
   }
 }
 
