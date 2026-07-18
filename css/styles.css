@@ -101,13 +101,13 @@ a {
 }
 
 body.is-article-page {
-  --header-height: 56px;
+  --header-height: 50px;
 }
 
 body.is-article-page .brand__logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
   box-shadow: 0 10px 20px rgba(36, 107, 254, 0.22);
 }
 
@@ -125,8 +125,24 @@ body.is-article-page .brand__logo {
 
 .brand__tagline {
   margin-top: 3px;
+  max-height: 16px;
+  overflow: hidden;
   color: var(--muted);
   font-size: 12px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: max-height 240ms ease, margin-top 240ms ease, opacity 180ms ease, transform 240ms ease;
+}
+
+body.is-article-page .brand__tagline {
+  max-height: 0;
+  margin-top: 0;
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+body.is-article-page .brand__name {
+  line-height: 1;
 }
 
 .nav__toggle {
@@ -1115,7 +1131,7 @@ main {
 
 .article-body .article-image-row--app-downloads {
   grid-template-columns: repeat(2, 150px);
-  gap: clamp(48px, 8vw, 84px);
+  gap: clamp(72px, 12vw, 120px);
   align-items: start;
   justify-content: center;
 }
@@ -1124,6 +1140,14 @@ main {
   width: 150px;
   height: 150px;
   object-fit: cover;
+}
+
+.article-body .app-download-link {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .article-body figcaption {
@@ -1155,7 +1179,7 @@ main {
 
   .article-body .article-image-row--app-downloads {
     grid-template-columns: repeat(2, minmax(0, 120px));
-    gap: 32px;
+    gap: 48px;
   }
 
   .article-body .article-image-row--app-downloads img {
@@ -1456,7 +1480,7 @@ main {
   }
 
   body.is-article-page {
-    --header-height: 52px;
+    --header-height: 48px;
   }
 
   .brand__tagline {
@@ -1685,8 +1709,8 @@ main {
   }
 
   body.is-article-page .brand__logo {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
   }
 
   .hero,
