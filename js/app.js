@@ -86,12 +86,17 @@ sections.forEach((section) => {
 });
 
 const app = document.querySelector("#app");
+const nav = document.querySelector(".nav");
 const navMenu = document.querySelector("#nav-menu");
 const navToggle = document.querySelector(".nav__toggle");
 const searchInput = document.querySelector("#site-search");
 const searchResults = document.querySelector("#search-results");
 const mobileNavQuery = window.matchMedia("(max-width: 860px)");
 const siteBaseUrl = new URL(".", document.baseURI);
+const articleContentIndex = new Map();
+
+let articleContentIndexPromise = null;
+let searchRenderToken = 0;
 
 let currentRoute = null;
 let cleanupActiveToc = null;
@@ -154,13 +159,16 @@ function findArticle(section, slug) {
 }
 
 function parseRoute() {
-  const rawHash = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+  const rawHash = window.location.hash.replace(/^#/, "");
+  const [rawPath, rawParams = ""] = rawHash.split("?");
+  const routePath = decodeURIComponent(rawPath);
+  const searchQuery = new URLSearchParams(rawParams).get("find")?.trim() || "";
 
-  if (!rawHash || rawHash === "home") {
+  if (!routePath || routePath === "home") {
     return { page: "home" };
   }
 
-  const [sectionId, articleSlug] = rawHash.split("/");
+  const [sectionId, articleSlug] = routePath.split("/");
   const section = findSection(sectionId);
 
   if (!section) {
@@ -177,7 +185,7 @@ function parseRoute() {
     window.history.replaceState(null, "", firstHref(section));
   }
 
-  return { page: "article", section, article };
+  return { page: "article", section, article, searchQuery };
 }
 
 function renderDropdowns() {
@@ -284,7 +292,7 @@ function renderMenu(section, currentSlug) {
 function renderMobileJump(section, currentSlug) {
   const options = flattenSection(section).map((article) => `
     <option value="${articleHref(section.id, article.slug)}" ${article.slug === currentSlug ? "selected" : ""}>
-      ${escapeHtml(section.flat ? article.title : `${article.parentTitle} / ${article.title}`)}
+      ${escapeHtml(article.title)}
     </option>
   `).join("");
 
@@ -474,6 +482,40 @@ async function renderArticle(route) {
   await loadArticleContent(route);
 }
 
+function scrollToArticleText(query) {
+  const articleBody = document.querySelector(".article-body");
+  if (!articleBody || !query) return;
+
+  const normalizedQuery = query.toLowerCase();
+  const walker = document.createTreeWalker(articleBody, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue?.trim()) return NodeFilter.FILTER_REJECT;
+      if (node.parentElement?.closest("script, style, .article-nav")) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  let textNode = walker.nextNode();
+  while (textNode) {
+    const index = textNode.nodeValue.toLowerCase().indexOf(normalizedQuery);
+    if (index >= 0) {
+      const marker = document.createElement("mark");
+      marker.className = "article-search-target";
+      const range = document.createRange();
+      range.setStart(textNode, index);
+      range.setEnd(textNode, index + query.length);
+      range.surroundContents(marker);
+      marker.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    textNode = walker.nextNode();
+  }
+
+  const fallback = [...articleBody.querySelectorAll("h2, h3, h4, h5, p, li, figcaption")]
+    .find((element) => element.textContent.toLowerCase().includes(normalizedQuery));
+  fallback?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
 function renderMissing() {
   document.body.classList.remove("is-article-page");
   document.title = "页面未找到｜小白说卡";
@@ -591,28 +633,87 @@ async function render() {
 
   updateActiveNav(route);
   window.scrollTo({ top: 0, behavior: "auto" });
+  if (route.page === "article" && route.searchQuery) {
+    requestAnimationFrame(() => scrollToArticleText(route.searchQuery));
+  }
 }
 
-function renderSearchResults(query) {
+function articleSearchKey(article) {
+  return `${article.sectionId}/${article.slug}`;
+}
+
+function htmlToSearchText(html) {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  template.content.querySelectorAll("script, style").forEach((node) => node.remove());
+  return (template.content.textContent || "").replace(/\s+/g, " ").trim();
+}
+
+function ensureArticleContentIndex() {
+  if (articleContentIndexPromise) return articleContentIndexPromise;
+
+  articleContentIndexPromise = Promise.all(allArticles().map(async (article) => {
+    try {
+      const response = await fetch(article.file, { cache: "force-cache" });
+      if (!response.ok) return;
+      articleContentIndex.set(articleSearchKey(article), htmlToSearchText(await response.text()));
+    } catch {
+      // A failed article fetch should not prevent title and metadata search.
+    }
+  }));
+
+  return articleContentIndexPromise;
+}
+
+function createSearchExcerpt(text, normalizedQuery) {
+  if (!text) return "";
+  const normalizedText = text.toLowerCase();
+  const index = normalizedText.indexOf(normalizedQuery);
+  if (index < 0) return "";
+  const start = Math.max(0, index - 28);
+  const end = Math.min(text.length, index + normalizedQuery.length + 48);
+  return `${start > 0 ? "…" : ""}${text.slice(start, end)}${end < text.length ? "…" : ""}`;
+}
+
+async function renderSearchResults(query) {
   if (!searchResults) return;
 
-  const normalized = query.trim().toLowerCase();
+  const renderToken = ++searchRenderToken;
+  const trimmedQuery = query.trim();
+  const normalized = trimmedQuery.toLowerCase();
   if (!normalized) {
     searchResults.innerHTML = "";
     searchResults.classList.remove("is-open");
     return;
   }
 
-  const matches = allArticles().filter((article) => {
-    const haystack = [
+  searchResults.innerHTML = `<div class="search-result search-result--empty">正在搜索文章内容…</div>`;
+  searchResults.classList.add("is-open");
+  await ensureArticleContentIndex();
+  if (renderToken !== searchRenderToken) return;
+
+  const matches = allArticles().map((article) => {
+    const metadata = [
       article.title,
       article.desc,
       article.parentTitle,
       article.sectionTitle,
       article.slug
     ].join(" ").toLowerCase();
-    return haystack.includes(normalized);
-  }).slice(0, 8);
+    const content = articleContentIndex.get(articleSearchKey(article)) || "";
+    const titleMatch = article.title.toLowerCase().includes(normalized);
+    const metadataMatch = metadata.includes(normalized);
+    const contentMatch = content.toLowerCase().includes(normalized);
+    return {
+      article,
+      titleMatch,
+      metadataMatch,
+      contentMatch,
+      excerpt: contentMatch ? createSearchExcerpt(content, normalized) : article.desc
+    };
+  }).filter((item) => item.metadataMatch || item.contentMatch)
+    .sort((a, b) => Number(b.metadataMatch) - Number(a.metadataMatch))
+    .slice(0, 8);
 
   if (!matches.length) {
     searchResults.innerHTML = `<div class="search-result search-result--empty">没有找到相关文章</div>`;
@@ -620,12 +721,18 @@ function renderSearchResults(query) {
     return;
   }
 
-  searchResults.innerHTML = matches.map((article) => `
-    <a class="search-result" href="${articleHref(article.sectionId, article.slug)}">
+  searchResults.innerHTML = matches.map(({ article, excerpt, titleMatch, contentMatch }) => {
+    const href = contentMatch && !titleMatch
+      ? `${articleHref(article.sectionId, article.slug)}?find=${encodeURIComponent(trimmedQuery)}`
+      : articleHref(article.sectionId, article.slug);
+    return `
+    <a class="search-result" href="${href}">
       <span class="search-result__title">${escapeHtml(article.title)}</span>
       <span class="search-result__path">${escapeHtml(article.sectionTitle)} / ${escapeHtml(article.parentTitle)}</span>
+      ${excerpt ? `<span class="search-result__excerpt">${escapeHtml(excerpt)}</span>` : ""}
     </a>
-  `).join("");
+  `;
+  }).join("");
   searchResults.classList.add("is-open");
 }
 
@@ -639,6 +746,7 @@ function closeMobileDropdowns(except = null) {
 
 function closeSearch() {
   document.querySelector(".search")?.classList.remove("is-open");
+  nav?.classList.remove("is-search-open");
   navToggle?.setAttribute("aria-expanded", "false");
 }
 
@@ -652,6 +760,7 @@ function bindGlobalEvents() {
     event.preventDefault();
     const search = document.querySelector(".search");
     const isOpen = search?.classList.toggle("is-open");
+    nav?.classList.toggle("is-search-open", Boolean(isOpen));
     navToggle.setAttribute("aria-expanded", String(isOpen));
     closeMobileDropdowns();
     if (isOpen) {
@@ -730,6 +839,11 @@ function bindGlobalEvents() {
 
 document.querySelector("#year").textContent = String(new Date().getFullYear());
 normalizeLocalImageSources(document);
+if ("requestIdleCallback" in window) {
+  window.requestIdleCallback(() => ensureArticleContentIndex());
+} else {
+  window.setTimeout(() => ensureArticleContentIndex(), 600);
+}
 renderDropdowns();
 bindGlobalEvents();
 render();
